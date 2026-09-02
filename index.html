@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sky Runner MVP</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="game-shell">
+      <h1>Sky Runner MVP</h1>
+      <div class="hud">
+        <div>Score: <span id="score">0</span></div>
+        <div>Lives: <span id="lives">3</span></div>
+      </div>
+      <canvas id="gameCanvas" width="960" height="540" aria-label="横スクロールアクションゲーム"></canvas>
+      <div class="controls">
+        <span>← → 移動</span>
+        <span>↑ / W ジャンプ</span>
+        <span>Space / J 前方攻撃</span>
+        <span>K 後方攻撃</span>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
