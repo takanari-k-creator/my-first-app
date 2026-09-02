@@ -15,6 +15,7 @@ const input = {
 
 const state = {
   running: true,
+  cleared: false,
   score: 0,
   lives: 3,
   lastTime: 0,
@@ -24,6 +25,7 @@ const state = {
   clouds: [],
   bullets: [],
   enemies: [],
+  boss: null,
 };
 
 const player = {
@@ -39,6 +41,7 @@ const player = {
 
 function resetGame() {
   state.running = true;
+  state.cleared = false;
   state.score = 0;
   state.lives = 3;
   state.spawnTimer = 0;
@@ -52,6 +55,7 @@ function resetGame() {
   }));
   state.bullets = [];
   state.enemies = [];
+  state.boss = null;
 
   player.x = 170;
   player.y = groundY - player.h;
@@ -68,6 +72,8 @@ function updateHud() {
 }
 
 function createEnemy() {
+  if (state.boss || state.cleared) return;
+
   const typeRoll = Math.random();
   const size = typeRoll > 0.7 ? 42 : 30;
   const enemy = {
@@ -81,6 +87,20 @@ function createEnemy() {
   };
 
   state.enemies.push(enemy);
+}
+
+function createBoss() {
+  state.boss = {
+    x: canvas.width + 80,
+    y: groundY - 120,
+    w: 120,
+    h: 120,
+    hp: 12,
+    maxHp: 12,
+    speed: 1.8,
+    phase: 0,
+  };
+  state.enemies = [];
 }
 
 function shoot(direction = player.facing) {
@@ -138,6 +158,11 @@ function update(dt) {
   }
 
   state.score += dt * 0.02;
+
+  if (state.score >= 200 && !state.boss && !state.cleared) {
+    createBoss();
+  }
+
   updateHud();
 
   for (const cloud of state.clouds) {
@@ -148,10 +173,12 @@ function update(dt) {
     }
   }
 
-  state.spawnTimer += dt;
-  if (state.spawnTimer > 900) {
-    state.spawnTimer = 0;
-    createEnemy();
+  if (!state.boss) {
+    state.spawnTimer += dt;
+    if (state.spawnTimer > 900) {
+      state.spawnTimer = 0;
+      createEnemy();
+    }
   }
 
   for (const bullet of state.bullets) {
@@ -161,14 +188,50 @@ function update(dt) {
     (bullet) => bullet.x > -30 && bullet.x < canvas.width + 30,
   );
 
-  for (const enemy of state.enemies) {
-    enemy.x -= (worldSpeed + enemy.speed) * dt * 0.06;
+  if (state.boss) {
+    state.boss.phase += dt;
+    if (state.boss.x > canvas.width - 240) {
+      state.boss.x -= state.boss.speed * dt * 0.06;
+    } else {
+      state.boss.x = canvas.width - 240;
+      state.boss.y = groundY - state.boss.h + Math.sin(state.boss.phase / 220) * 18;
+    }
+  } else {
+    for (const enemy of state.enemies) {
+      enemy.x -= (worldSpeed + enemy.speed) * dt * 0.06;
+    }
+    state.enemies = state.enemies.filter((enemy) => enemy.x + enemy.w > -10);
   }
-  state.enemies = state.enemies.filter((enemy) => enemy.x + enemy.w > -10);
 
   for (let i = state.bullets.length - 1; i >= 0; i -= 1) {
     const bullet = state.bullets[i];
     let hitEnemy = false;
+
+    if (state.boss) {
+      const touchingBoss =
+        bullet.x + bullet.r > state.boss.x &&
+        bullet.x - bullet.r < state.boss.x + state.boss.w &&
+        bullet.y + bullet.r > state.boss.y &&
+        bullet.y - bullet.r < state.boss.y + state.boss.h;
+
+      if (touchingBoss) {
+        state.boss.hp -= 1;
+        state.bullets.splice(i, 1);
+        hitEnemy = true;
+
+        if (state.boss.hp <= 0) {
+          state.score += 100;
+          state.cleared = true;
+          state.running = false;
+          state.boss = null;
+          updateHud();
+        }
+      }
+    }
+
+    if (hitEnemy) {
+      continue;
+    }
 
     for (let j = state.enemies.length - 1; j >= 0; j -= 1) {
       const enemy = state.enemies[j];
@@ -192,12 +255,30 @@ function update(dt) {
     }
 
     if (hitEnemy) {
-      break;
+      continue;
     }
   }
 
   if (player.invulnerable > 0) {
     player.invulnerable -= dt;
+  }
+
+  if (state.boss) {
+    const overlap =
+      player.x < state.boss.x + state.boss.w &&
+      player.x + player.w > state.boss.x &&
+      player.y < state.boss.y + state.boss.h &&
+      player.y + player.h > state.boss.y;
+
+    if (overlap && player.invulnerable <= 0) {
+      state.lives -= 1;
+      player.invulnerable = 1200;
+      state.flashTimer = 260;
+
+      if (state.lives <= 0) {
+        state.running = false;
+      }
+    }
   }
 
   for (const enemy of state.enemies) {
@@ -300,6 +381,21 @@ function drawEnemies() {
     ctx.fillRect(enemy.x + 10, enemy.y + 22, 6, 6);
     ctx.fillRect(enemy.x + enemy.w - 16, enemy.y + 22, 6, 6);
   }
+
+  if (state.boss) {
+    const boss = state.boss;
+    ctx.fillStyle = '#7c2d12';
+    ctx.fillRect(boss.x, boss.y, boss.w, boss.h);
+
+    ctx.fillStyle = '#fef3c7';
+    ctx.fillRect(boss.x + 20, boss.y + 20, boss.w - 40, 18);
+    ctx.fillStyle = '#dc2626';
+    ctx.fillRect(boss.x + 16, boss.y + 20, ((boss.hp / boss.maxHp) * (boss.w - 32)), 18);
+
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(boss.x + 26, boss.y + 52, 16, 16);
+    ctx.fillRect(boss.x + boss.w - 42, boss.y + 52, 16, 16);
+  }
 }
 
 function drawGameOver() {
@@ -311,9 +407,9 @@ function drawGameOver() {
   ctx.fillStyle = '#f8fafc';
   ctx.font = 'bold 44px sans-serif';
   ctx.textAlign = 'center';
-  ctx.fillText('Game Over', canvas.width / 2, canvas.height / 2 - 20);
+  ctx.fillText(state.cleared ? 'Clear!' : 'Game Over', canvas.width / 2, canvas.height / 2 - 20);
   ctx.font = '26px sans-serif';
-  ctx.fillText('Press R to restart', canvas.width / 2, canvas.height / 2 + 30);
+  ctx.fillText(state.cleared ? 'Press R to play again' : 'Press R to restart', canvas.width / 2, canvas.height / 2 + 30);
 }
 
 function render() {
