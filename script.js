@@ -305,38 +305,45 @@ function update(dt) {
 }
 
 function drawBackground() {
-  ctx.fillStyle = '#7dd3fc';
+  ctx.fillStyle = '#08001c';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   for (const cloud of state.clouds) {
-    ctx.fillStyle = 'rgba(255,255,255,0.7)';
-    ctx.beginPath();
-    ctx.arc(cloud.x, cloud.y, cloud.size * 0.4, 0, Math.PI * 2);
-    ctx.arc(cloud.x + cloud.size * 0.5, cloud.y + 5, cloud.size * 0.35, 0, Math.PI * 2);
-    ctx.arc(cloud.x - cloud.size * 0.5, cloud.y + 5, cloud.size * 0.35, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillStyle = '#00f6ff';
+    ctx.fillRect(Math.floor(cloud.x), Math.floor(cloud.y), 2, 2);
   }
 
-  ctx.fillStyle = '#93c5fd';
+  ctx.fillStyle = '#170f46';
   for (let i = 0; i < 5; i += 1) {
     const hillX = (i * 250) - (state.score * 0.1) % 250;
     ctx.beginPath();
     ctx.moveTo(hillX, canvas.height);
-    ctx.quadraticCurveTo(hillX + 120, 300, hillX + 240, canvas.height);
+    ctx.lineTo(hillX + 120, 300);
+    ctx.lineTo(hillX + 240, canvas.height);
     ctx.fill();
+  }
+
+  ctx.strokeStyle = 'rgba(255, 0, 168, 0.35)';
+  ctx.lineWidth = 1;
+  for (let x = -canvas.height; x < canvas.width; x += 48) {
+    ctx.beginPath();
+    ctx.moveTo(canvas.width / 2, groundY);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+  for (let y = groundY + 12; y < canvas.height; y += 18) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
   }
 }
 
 function drawGround() {
-  ctx.fillStyle = '#166534';
+  ctx.fillStyle = '#09051f';
   ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
 
-  ctx.fillStyle = '#22c55e';
-  for (let x = -10; x < canvas.width + 40; x += 40) {
-    ctx.fillRect(x, groundY + 18, 24, 8);
-  }
-
-  ctx.strokeStyle = '#14532d';
+  ctx.strokeStyle = '#00f6ff';
   ctx.lineWidth = 3;
   ctx.beginPath();
   ctx.moveTo(0, groundY);
@@ -348,51 +355,65 @@ function drawPlayer() {
   const blink = player.invulnerable > 0 && Math.floor(player.invulnerable / 80) % 2 === 0;
   if (blink) return;
 
-  ctx.fillStyle = '#1d4ed8';
+  ctx.shadowColor = '#00f6ff';
+  ctx.shadowBlur = 14;
+  ctx.fillStyle = '#1155cc';
   ctx.fillRect(player.x, player.y, player.w, player.h);
+  ctx.shadowBlur = 0;
 
-  ctx.fillStyle = '#f8fafc';
+  ctx.strokeStyle = '#00f6ff';
+  ctx.strokeRect(player.x, player.y, player.w, player.h);
+  ctx.fillStyle = '#e8faff';
   ctx.fillRect(player.x + 8, player.y + 8, player.w - 16, 16);
 
-  ctx.fillStyle = '#fbbf24';
+  ctx.fillStyle = '#ff00a8';
   ctx.fillRect(player.x + player.w - 8, player.y + 16, 12, 10);
 
-  ctx.fillStyle = '#0f172a';
+  ctx.fillStyle = '#050014';
   ctx.fillRect(player.x + (player.facing === 1 ? player.w : -10), player.y + 18, 10, 6);
 }
 
 function drawBullets() {
-  ctx.fillStyle = '#facc15';
+  ctx.shadowColor = '#faff00';
+  ctx.shadowBlur = 12;
+  ctx.fillStyle = '#faff00';
   for (const bullet of state.bullets) {
-    ctx.beginPath();
-    ctx.arc(bullet.x, bullet.y, bullet.r, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillRect(bullet.x - bullet.r, bullet.y - 2, bullet.r * 2, 4);
   }
+  ctx.shadowBlur = 0;
 }
 
 function drawEnemies() {
   for (const enemy of state.enemies) {
-    ctx.fillStyle = enemy.color;
+    ctx.shadowColor = '#ff00a8';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#d41472';
     ctx.fillRect(enemy.x, enemy.y, enemy.w, enemy.h);
+    ctx.shadowBlur = 0;
 
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = '#00f6ff';
     ctx.fillRect(enemy.x + 6, enemy.y + 7, enemy.w - 12, 8);
-    ctx.fillStyle = '#111827';
+    ctx.fillStyle = '#050014';
     ctx.fillRect(enemy.x + 10, enemy.y + 22, 6, 6);
     ctx.fillRect(enemy.x + enemy.w - 16, enemy.y + 22, 6, 6);
   }
 
   if (state.boss) {
     const boss = state.boss;
-    ctx.fillStyle = '#7c2d12';
+    ctx.shadowColor = '#ff00a8';
+    ctx.shadowBlur = 24;
+    ctx.fillStyle = '#42145f';
     ctx.fillRect(boss.x, boss.y, boss.w, boss.h);
+    ctx.shadowBlur = 0;
 
-    ctx.fillStyle = '#fef3c7';
+    ctx.fillStyle = '#21103f';
     ctx.fillRect(boss.x + 20, boss.y + 20, boss.w - 40, 18);
-    ctx.fillStyle = '#dc2626';
+    ctx.fillStyle = '#ff00a8';
     ctx.fillRect(boss.x + 16, boss.y + 20, ((boss.hp / boss.maxHp) * (boss.w - 32)), 18);
 
-    ctx.fillStyle = '#111827';
+    ctx.strokeStyle = '#00f6ff';
+    ctx.strokeRect(boss.x, boss.y, boss.w, boss.h);
+    ctx.fillStyle = '#ff1744';
     ctx.fillRect(boss.x + 26, boss.y + 52, 16, 16);
     ctx.fillRect(boss.x + boss.w - 42, boss.y + 52, 16, 16);
   }
