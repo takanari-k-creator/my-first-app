@@ -484,5 +484,24 @@ window.addEventListener('keyup', (event) => {
   if (event.code === 'KeyK') input.shootBack = false;
 });
 
+document.querySelectorAll('[data-action]').forEach((button) => {
+  const action = button.dataset.action;
+  if (!action || !(action in input)) return;
+
+  const setPressed = (pressed) => {
+    input[action] = pressed;
+    button.classList.toggle('pressed', pressed);
+  };
+
+  button.addEventListener('pointerdown', (event) => {
+    event.preventDefault();
+    button.setPointerCapture(event.pointerId);
+    setPressed(true);
+  });
+  button.addEventListener('pointerup', () => setPressed(false));
+  button.addEventListener('pointercancel', () => setPressed(false));
+  button.addEventListener('lostpointercapture', () => setPressed(false));
+});
+
 resetGame();
 requestAnimationFrame(loop);
